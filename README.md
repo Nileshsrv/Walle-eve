@@ -8,9 +8,9 @@
 [![Battery Deaths](https://img.shields.io/badge/battery%20deaths-0-brightgreen.svg?style=flat-square)](LEADERBOARD.md)
 
 > **Active Bayesian spatial inference and pursuit simulation under battery constraints, noisy sensor observations, and deceptive decoy beacons.**
-*Link of project: https://walle-eve.netlify.app/ *
----
 
+---
+Link of project: [https://walle-eve.netlify.app/](https://walle-eve.netlify.app/)
 ## 📌 Table of Contents
 
 - [Overview](#-overview)
