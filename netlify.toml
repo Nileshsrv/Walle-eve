@@ -1,0 +1,22 @@
+# app.py is a Flask app; Netlify has no Python server runtime, so the site is static and
+# static/pybridge.js runs app.py in the browser with Pyodide.
+[build]
+  command = "node scripts/build-site.mjs"
+  publish = "dist"
+
+# Read-only endpoints used by the landing and guide pages are served as plain files,
+# so those pages don't need to boot the Python runtime.
+[[redirects]]
+  from = "/api/leaderboard"
+  to = "/py/results/LEADERBOARD.md"
+  status = 200
+
+[[redirects]]
+  from = "/api/runs/:name"
+  to = "/py/data/runs/:name.json"
+  status = 200
+
+[[headers]]
+  for = "/py/results/*"
+  [headers.values]
+    Content-Type = "text/markdown; charset=utf-8"
