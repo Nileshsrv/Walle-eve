@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WALL-E & EVE · Bayesian Pursuit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090b0f;
+  --bg2: #0d1018;
+  --panel: #111520;
+  --line: #1e2435;
+  --txt: #e8ecf4;
+  --mute: #6a7490;
+  --gold: #f0a832;
+  --gold2: #e8940a;
+  --gold-glow: rgba(240,168,50,.18);
+  --gold-dim: rgba(240,168,50,.08);
+  --cyan: #00d4e8;
+  --mag: #ff2d6b;
+  --green: #3de89c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font:15px/1.6 Inter,system-ui,sans-serif;overflow-x:hidden}
+
+/* ── particles canvas ── */
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+/* ── nav ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:24px;padding:16px 48px;background:rgba(9,11,15,.7);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.05)}
+.nav-brand{font-weight:700;font-size:17px;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
+.nav-brand .amp{color:var(--gold)}
+.nav-logo{width:32px;height:32px;border:2px solid var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);background:var(--gold-dim)}
+.nav-links{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-link{color:var(--mute);text-decoration:none;font-size:14px;padding:8px 14px;border-radius:8px;transition:color .2s,background .2s}
+.nav-link:hover{color:var(--txt);background:rgba(255,255,255,.05)}
+.nav-cta{background:var(--gold);color:#0a0700;font-weight:600;font-size:13px;padding:9px 20px;border-radius:8px;text-decoration:none;transition:opacity .2s,transform .15s;white-space:nowrap}
+.nav-cta:hover{opacity:.9;transform:translateY(-1px)}
+
+/* ── hero ── */
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;padding:120px 48px 80px;overflow:hidden}
+.hero-content{max-width:580px;position:relative}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--gold-dim);border:1px solid rgba(240,168,50,.3);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--gold);font-weight:500;margin-bottom:28px;animation:fadeUp .6s ease both}
+.hero-badge .dot{width:6px;height:6px;background:var(--gold);border-radius:50%;animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+h1{font-size:clamp(42px,7vw,72px);font-weight:700;line-height:1.06;letter-spacing:-.04em;margin-bottom:22px;animation:fadeUp .7s .1s ease both}
+h1 .accent{color:var(--gold)}
+h1 .dim{color:var(--mute);font-weight:300}
+.hero-sub{font-size:18px;color:var(--mute);max-width:50ch;line-height:1.65;margin-bottom:40px;animation:fadeUp .7s .2s ease both;font-weight:400}
+.hero-sub strong{color:var(--txt);font-weight:500}
+.hero-btns{display:flex;align-items:center;gap:14px;flex-wrap:wrap;animation:fadeUp .7s .3s ease both}
+.btn-primary{background:var(--gold);color:#0a0700;font-weight:600;font-size:15px;padding:13px 28px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:opacity .2s,transform .15s,box-shadow .2s;box-shadow:0 0 32px rgba(240,168,50,.3)}
+.btn-primary:hover{opacity:.92;transform:translateY(-2px);box-shadow:0 0 48px rgba(240,168,50,.45)}
+.btn-ghost{background:transparent;color:var(--txt);font-size:14px;padding:12px 22px;border-radius:10px;text-decoration:none;border:1px solid var(--line);display:inline-flex;align-items:center;gap:7px;transition:border-color .2s,background .2s}
+.btn-ghost:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.04)}
+.btn-arrow{opacity:.6}
+
+/* hero visual */
+.hero-visual{position:absolute;right:-60px;top:50%;transform:translateY(-50%);width:min(600px,50vw);pointer-events:none;animation:fadeIn .9s .1s ease both}
+.hero-grid{width:100%;aspect-ratio:1;position:relative}
+#heroCanvas{width:100%;height:100%;display:block}
+
+/* hero stats */
+.hero-stats{display:flex;gap:36px;margin-top:52px;padding-top:40px;border-top:1px solid var(--line);flex-wrap:wrap;animation:fadeUp .7s .45s ease both}
+.stat{display:flex;flex-direction:column;gap:3px}
+.stat-num{font-size:30px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1}
+.stat-label{font-size:12px;color:var(--mute);max-width:16ch}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ── how it works ── */
+.section{position:relative;z-index:1;padding:100px 48px;max-width:1200px;margin:0 auto}
+.section-eyebrow{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.section-title{font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px}
+.section-sub{color:var(--mute);font-size:16px;max-width:58ch;line-height:1.7;margin-bottom:56px}
+
+/* pipeline */
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:60px}
+.pipe-step{padding:24px 20px 28px;border-right:1px solid var(--line);background:var(--panel);position:relative;transition:background .25s}
+.pipe-step:last-child{border-right:0}
+.pipe-step:hover{background:#161c2a}
+.pipe-num{font-size:10px;font-weight:600;color:var(--mute);letter-spacing:.1em;margin-bottom:10px}
+.pipe-icon{width:36px;height:36px;border-radius:10px;background:var(--gold-dim);border:1px solid rgba(240,168,50,.25);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
+.pipe-step h4{font-size:14px;font-weight:600;color:var(--txt);margin-bottom:8px}
+.pipe-step p{font-size:12px;color:var(--mute);line-height:1.6;margin-bottom:12px}
+.pipe-formula{font:11px/1.5 "JetBrains Mono",monospace;color:var(--cyan);background:#0a0d15;border-radius:8px;padding:8px 10px;overflow-x:auto}
+.pipe-live{margin-top:10px;font:11px "JetBrains Mono",monospace;color:var(--mute)}
+.pipe-live b{color:var(--gold);font-weight:500}
+
+/* feature grid */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px}
+.feature{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;transition:border-color .25s,transform .2s}
+.feature:hover{border-color:rgba(240,168,50,.3);transform:translateY(-2px)}
+.feature-icon{width:40px;height:40px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.feature-icon.gold{background:var(--gold-dim);border:1px solid rgba(240,168,50,.25)}
+.feature-icon.cyan{background:rgba(0,212,232,.08);border:1px solid rgba(0,212,232,.2)}
+.feature-icon.green{background:rgba(61,232,156,.08);border:1px solid rgba(61,232,156,.2)}
+.feature h3{font-size:15px;font-weight:600;margin-bottom:8px}
+.feature p{font-size:13px;color:var(--mute);line-height:1.6}
+.feature .tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:5px;margin-top:12px}
+.feature .tag.new{background:rgba(0,212,232,.12);color:var(--cyan)}
+
+/* results table */
+.results-wrap{overflow-x:auto;margin-bottom:56px}
+table{border-collapse:collapse;width:100%;font:12.5px/1.5 "JetBrains Mono",monospace}
+th,td{padding:10px 16px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:400;font-size:11px;letter-spacing:.06em}
+tr.v2 td{color:var(--gold)}
+tr.v2 td:first-child{font-weight:600}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+
+/* CTA band */
+.cta-band{position:relative;z-index:1;padding:80px 48px;text-align:center;background:linear-gradient(135deg,rgba(240,168,50,.06) 0%,transparent 60%);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.cta-band h2{font-size:clamp(28px,4vw,42px);font-weight:700;letter-spacing:-.03em;margin-bottom:14px}
+.cta-band p{color:var(--mute);font-size:16px;max-width:52ch;margin:0 auto 36px;line-height:1.7}
+.cta-band .badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:28px}
+.badge{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--mute)}
+.badge b{color:var(--txt)}
+
+/* footer */
+footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--line);display:flex;align-items:center;gap:16px;color:var(--mute);font-size:13px}
+footer .brand{font-weight:600;color:var(--txt);margin-right:auto}
+footer a{color:var(--mute);text-decoration:none}
+footer a:hover{color:var(--gold)}
+
+/* glow blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;opacity:.5}
+.blob-1{width:600px;height:600px;background:radial-gradient(circle,rgba(240,168,50,.12) 0%,transparent 70%);top:-100px;right:-100px;animation:float1 12s ease-in-out infinite}
+.blob-2{width:500px;height:500px;background:radial-gradient(circle,rgba(0,212,232,.07) 0%,transparent 70%);bottom:20%;left:-150px;animation:float2 15s ease-in-out infinite}
+@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,40px)}}
+@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-30px)}}
+
+/* responsive */
+@media(max-width:1100px){.hero-visual{display:none}.hero-content{max-width:none}}
+@media(max-width:900px){
+  .nav{padding:14px 24px}
+  .hero{padding:100px 24px 60px}
+  .section{padding:70px 24px}
+  .pipeline{grid-template-columns:1fr 1fr}
+  .pipe-step:nth-child(2){border-right:0}
+  .pipe-step:nth-child(3){border-right:1px solid var(--line)}
+  .features{grid-template-columns:1fr 1fr}
+  .cta-band{padding:60px 24px}
+  footer{padding:24px}
+}
+@media(max-width:600px){
+  .pipeline{grid-template-columns:1fr}
+  .pipe-step{border-right:0;border-bottom:1px solid var(--line)}
+  .features{grid-template-columns:1fr}
+  .nav-links .nav-link{display:none}
+  .hero-stats{gap:24px}
+}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">W·E</div>
+    WALL-E <span class="amp">&</span> EVE
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="#how">How it works</a>
+    <a class="nav-link" href="#results">Results</a>
+    <a class="nav-link" href="/guide">Science</a>
+    <a class="nav-cta" href="/mission">Launch Console →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Bayesian Pursuit · v2 Agent Active
+    </div>
+    <h1>
+      Bayesian<br>
+      <span class="accent">pursuit</span><br>
+      <span class="dim">at its best.</span>
+    </h1>
+    <p class="hero-sub">
+      WALL-E hunts EVE across a procedural grid using <strong>Bayesian inference</strong>,
+      particle filters, and information-theoretic scanning — 37% fewer steps than the baseline.
+    </p>
+    <div class="hero-btns">
+      <a class="btn-primary" href="/mission">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>
+        Launch mission
+      </a>
+      <a class="btn-ghost" href="/guide">
+        How it thinks
+        <span class="btn-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-num">37%</span>
+        <span class="stat-label">fewer steps vs baseline</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">100%</span>
+        <span class="stat-label">capture rate on 200 seeds</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">50%</span>
+        <span class="stat-label">lower battery spend</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">0</span>
+        <span class="stat-label">battery deaths recorded</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="hero-grid">
+      <canvas id="heroCanvas"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<div class="section" id="how">
+  <div class="section-eyebrow">Algorithm</div>
+  <h2 class="section-title">One tick, five moves</h2>
+  <p class="section-sub">Every timestep the agent runs a complete Bayesian pipeline — no shortcuts, no heuristics.</p>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-num">01</div>
+      <div class="pipe-icon">🌀</div>
+      <h4>Drift</h4>
+      <p>EVE moves with probability q before WALL-E acts. Threat level controls q.</p>
+      <div class="pipe-formula">q ∈ {0.05, 0.12, 0.20}<br>by threat level</div>
+      <div class="pipe-live" id="l1"> </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">02</div>
+      <div class="pipe-icon">🔮</div>
+      <h4>Predict</h4>
+      <p>Smear the belief across her possible steps. Mass is conserved exactly.</p>
+      <div class="pipe-formula">p′ = (1−q)p + q·Σ p(n)/deg(n)</div>
+      <div class="pipe-live" id="l2"> </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">03</div>
+      <div class="pipe-icon">📡</div>
+      <h4>Sense</h4>
+      <p>A scan returns unlabeled detections: EVE plus decoys, shuffled.</p>
+      <div class="pipe-formula">s = a·e^(−d/5) + noise<br>θ = bearing + noise</div>
+      <div class="pipe-live" id="l3"> </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">04</div>
+      <div class="pipe-icon">⚖️</div>
+      <h4>Update</h4>
+      <p>Marginalise over decoy assignments, multiply, renormalise.</p>
+      <div class="pipe-formula">L(c)=ε+Σⱼ wⱼ·N(θⱼ)·N(sⱼ)<br>post ∝ prior·L</div>
+      <div class="pipe-live" id="l4"> </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">05</div>
+      <div class="pipe-icon">⚡</div>
+      <h4>Act</h4>
+      <p>Pick the best move under the battery reserve rule.</p>
+      <div class="pipe-formula">reserve = path(pad) + 2·scan_cost<br>commit only if slack ≥ 0</div>
+      <div class="pipe-live" id="l5"> </div>
+    </div>
+  </div>
+
+  <!-- features -->
+  <div class="section-eyebrow">v2 Upgrades</div>
+  <h2 class="section-title">Six improvements, all measured</h2>
+  <p class="section-sub">Every switch is independently ablated over 200 held-out seeds with 95% bootstrap confidence intervals.</p>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon gold">🧠</div>
+      <h3>Learns EVE's speed</h3>
+      <p>Five belief tracks run at different motion rates q and are re-weighted by how well each predicted the sensor readings. Robust to model mismatch.</p>
+      <span class="tag new">Online learning</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon gold">🎯</div>
+      <h3>Exact decoy handling</h3>
+      <p>Instead of a heuristic, it computes the exact probability each detection is EVE by summing over all possible decoy assignments (up to 120 terms).</p>
+      <span class="tag new">Combinatorial</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon cyan">📊</div>
+      <h3>Information-efficient scanning</h3>
+      <p>Monte-Carlo expected information gain per battery unit. Scans where information is cheap, from positions that triangulate naturally.</p>
+      <span class="tag new">EIG planning</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon gold">🔋</div>
+      <h3>Reserve from destination</h3>
+      <p>Before committing to a leg, checks the route home from where the leg ends — not from the current position. Zero battery deaths.</p>
+      <span class="tag new">Safety</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon cyan">🗺️</div>
+      <h3>QMDP targeting</h3>
+      <p>Targets the cell minimising expected travel distance Σ p(c)·dist(x→c), not the tallest peak. Handles bimodal beliefs correctly.</p>
+      <span class="tag new">Value function</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon green">🔍</div>
+      <h3>Particle filter check</h3>
+      <p>400 particles shadow the grid belief. Disagreement triggers likelihood tempering. A safety diagnostic that proved unnecessary — which is itself a result.</p>
+      <span class="tag new">SMC</span>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="section" id="results">
+  <div class="section-eyebrow">Benchmark</div>
+  <h2 class="section-title">Measured on 200 held-out seeds</h2>
+  <p class="section-sub">Paired comparison: every agent faces identical maps, EVE paths and sensor noise. Results from <code style="font:inherit;color:var(--gold)">results/LEADERBOARD.md</code>.</p>
+  <div class="results-wrap" id="board">
+    <span style="font:12px 'JetBrains Mono',monospace;color:var(--mute)">Loading benchmark data…</span>
+  </div>
+</div>
+
+<!-- CTA BAND -->
+<div class="cta-band">
+  <h2>See it run live.</h2>
+  <p>Configure the threat level, agent, and sensor noise. Watch the belief update in real time, scrub the timeline, replay any step.</p>
+  <a class="btn-primary" href="/mission" style="display:inline-flex">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>
+    Open the mission console
+  </a>
+  <div class="badges">
+    <div class="badge">Seed <b>7</b> preloaded</div>
+    <div class="badge">Threat: <b>standard / pursuit / calm</b></div>
+    <div class="badge">Hard sensors: <b>σ ×1.5 + 10% dropouts</b></div>
+    <div class="badge">Replay any recording</div>
+    <div class="badge">Save briefing JSON</div>
+  </div>
+</div>
+
+<footer>
+  <span class="brand">WALL-E <span style="color:var(--gold)">&</span> EVE</span>
+  <a href="/mission">Console</a>
+  <a href="/guide">Science</a>
+  <span>Bayesian pursuit simulator · v2 agent</span>
+</footer>
+
+<script>
+/* ── particle background ── */
+(function(){
+  const cv = document.getElementById('particles'), ctx = cv.getContext('2d');
+  let pts = [], W, H;
+  function resize(){W = cv.width = window.innerWidth; H = cv.height = window.innerHeight;}
+  resize(); window.addEventListener('resize', resize);
+  for(let i=0;i<90;i++) pts.push({x:Math.random()*3000,y:Math.random()*2000,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.12,r:Math.random()*1.6+.4,a:Math.random()});
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle=`rgba(240,168,50,${p.a*.25})`;ctx.fill();});
+    pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<140){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=`rgba(240,168,50,${(1-d/140)*.08})`;ctx.lineWidth=.8;ctx.stroke();}}));
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ── hero canvas: live belief grid animation ── */
+(function(){
+  const cv = document.getElementById('heroCanvas');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  const N = 14;
+  let W, cells = Array.from({length:N*N}, (_,i)=>({r:Math.floor(i/N),c:i%N,v:Math.random(),target:Math.random(),speed:.004+Math.random()*.008}));
+  // mark some as obstacles
+  const obs = [[0,0],[0,1],[2,4],[5,5],[7,3],[10,11],[12,13],[3,9],[8,1],[1,12]];
+  cells.forEach(cell=>{ if(obs.some(([r,c])=>r===cell.r&&c===cell.c)) cell.wall=true; });
+  let wallePos = {r:7,c:7}, walleTarget = {r:3,c:10};
+  let tick=0;
+
+  function resize(){
+    const side = cv.parentElement.offsetWidth;
+    cv.style.width=cv.style.height=side+'px';
+    W=cv.width=cv.height=side*window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
+  }
+  resize(); window.addEventListener('resize',resize);
+
+  function lerp(a,b,t){return a+(b-a)*t}
+  function drawFrame(){
+    tick++;
+    const side = cv.parentElement.offsetWidth, cs = side/N;
+    ctx.clearRect(0,0,side,side);
+    // grid lines
+    ctx.strokeStyle='rgba(30,36,53,.6)';ctx.lineWidth=.7;
+    for(let i=0;i<=N;i++){ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,side);ctx.moveTo(0,i*cs);ctx.lineTo(side,i*cs);ctx.stroke();}
+    // cells
+    cells.forEach(cell=>{
+      if(cell.wall){ctx.fillStyle='#161c2a';ctx.fillRect(cell.c*cs+1,cell.r*cs+1,cs-2,cs-2);return;}
+      cell.v=lerp(cell.v,cell.target,cell.speed);
+      if(Math.abs(cell.v-cell.target)<.01){cell.target=Math.random();}
+      const a=Math.sqrt(cell.v)*.75;
+      ctx.fillStyle=`rgba(240,168,50,${a*.5})`;
+      ctx.fillRect(cell.c*cs+1,cell.r*cs+1,cs-2,cs-2);
+    });
+    // WALL-E
+    const wx=(wallePos.c+.5)*cs, wy=(wallePos.r+.5)*cs;
+    ctx.fillStyle='#090b0f';ctx.strokeStyle='rgba(0,212,232,.9)';ctx.lineWidth=2;
+    ctx.shadowColor='rgba(0,212,232,.6)';ctx.shadowBlur=10;
+    ctx.beginPath();ctx.rect(wx-cs*.28,wy-cs*.2,cs*.56,cs*.4);ctx.fill();ctx.stroke();
+    ctx.shadowBlur=0;
+    // EVE (hidden, pulsing dot at a random position)
+    const ep = cells[Math.floor(tick/90)%cells.length]; if(ep&&!ep.wall){
+      ctx.fillStyle='rgba(255,45,107,.7)';ctx.shadowColor='rgba(255,45,107,.5)';ctx.shadowBlur=12;
+      ctx.beginPath();ctx.arc((ep.c+.5)*cs,(ep.r+.5)*cs,cs*.22,0,7);ctx.fill();ctx.shadowBlur=0;
+    }
+    // scan pulse
+    if(tick%120<40){const a=(40-(tick%120))/40;ctx.strokeStyle=`rgba(0,212,232,${a*.5})`;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(wx,wy,cs*(1.5+(1-a)*N*.3),0,7);ctx.stroke();}
+    requestAnimationFrame(drawFrame);
+  }
+  drawFrame();
+})();
+
+/* ── load live data for pipeline steps ── */
+(async()=>{
+  try{
+    const run=await(await fetch('/api/runs/seed7_v2_standard')).json(),F=run.frames,last=F[F.length-1];
+    const scans=F.filter(f=>f.action==='scan').length;
+    document.getElementById('l1').innerHTML=`EVE moved on <b>${F.length-1}</b> ticks · true q <b>${run.meta.true_q}</b>`;
+    document.getElementById('l2').innerHTML=`entropy start: <b>${F[0].entropy.toFixed(2)}</b> / ${Math.log(run.meta.nfree).toFixed(2)} nats`;
+    document.getElementById('l3').innerHTML=`<b>${scans}</b> scans + free opening read`;
+    document.getElementById('l4').innerHTML=`entropy at capture: <b>${last.entropy.toFixed(2)}</b> · 90% set: <b>${last.cred90.length}</b> cells`;
+    document.getElementById('l5').innerHTML=`captured step <b>${last.step}</b> · <b>${last.spend.move_cost+last.spend.scan_cost}</b> battery`;
+  }catch(e){}
+  try{
+    const md=await(await fetch('/api/leaderboard')).text();
+    if(md.trim()){document.getElementById('board').innerHTML=renderMd(md);}
+    else document.getElementById('board').innerHTML='<span style="font:12px \'JetBrains Mono\',monospace;color:var(--mute)">Run <b>python bench.py</b> to generate the leaderboard.</span>';
+  }catch(e){}
+})();
+function renderMd(t){
+  let out='',rows=[];
+  const flush=()=>{if(!rows.length)return;const cells=r=>r.split('|').slice(1,-1).map(s=>s.trim());
+    out+='<table><thead><tr>'+cells(rows[0]).map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+
+      rows.slice(2).map(r=>`<tr class="${/^\| v2 \|/.test(r)?'v2':''}">`+cells(r).map(c=>`<td>${c}</td>`).join('')+'</tr>').join('')+'</tbody></table>';rows=[];};
+  t.split('\n').forEach(l=>{if(l.startsWith('|'))rows.push(l);else{flush();if(l.startsWith('## '))out+=`<p style="font:600 11px 'JetBrains Mono',monospace;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;margin:24px 0 8px">${l.slice(3)}</p>`;}});
+  flush();return out;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WALL-E & EVE · Mission Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <header class="top">
+    <a class="brand" href="/">
+      <div class="brand-logo">W·E</div>
+      WALL-E <i>&</i> EVE
+    </a>
+    <div id="runLabel" class="runlabel mono">loading…</div>
+    <nav class="topnav">
+      <label class="linkbtn">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Open recording
+        <input id="openFile" type="file" accept="application/json" hidden>
+      </label>
+      <select id="recSel" title="Recorded demo runs"><option value="">Demo runs…</option></select>
+      <button id="btnSave" class="linkbtn">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+        Save
+      </button>
+      <a class="linkbtn" href="/api/briefing" id="lnkBrief">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Briefing
+      </a>
+      <a class="linkbtn" href="/guide">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+        How it thinks
+      </a>
+    </nav>
+  </header>
+
+  <!-- LEFT RAIL -->
+  <aside class="rail">
+    <section class="rail-section">
+      <h3 class="rail-heading">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Mission Setup
+      </h3>
+      <div class="row2">
+        <label class="field-label">Map seed<input id="seed" type="number" value="7" min="0"></label>
+        <label class="field-label">EVE seed<input id="eveSeed" type="number" placeholder="default" min="0"></label>
+      </div>
+      <label class="field-label">Agent<select id="agent"></select></label>
+      <fieldset class="seg" id="threat">
+        <legend>Threat level</legend>
+        <label><input type="radio" name="th" value="calm"><span>calm</span></label>
+        <label><input type="radio" name="th" value="standard" checked><span>standard</span></label>
+        <label><input type="radio" name="th" value="pursuit"><span>pursuit</span></label>
+      </fieldset>
+      <label class="check"><input type="checkbox" id="hard"> Hard sensors <small>σ ×1.5 · 10% dropouts</small></label>
+      <div class="btns">
+        <button id="btnLaunch" class="btn-primary-sm">
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+          Launch
+        </button>
+        <button id="btnReroll" class="btn-outline-sm">⟳ Reroll EVE</button>
+      </div>
+    </section>
+
+    <section class="rail-section">
+      <h3 class="rail-heading">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Power
+      </h3>
+      <div class="gauge-wrap">
+        <div class="gauge"><i id="gFill"></i><u id="gReserve"></u></div>
+        <div class="gnum">
+          <b id="batNum" class="mono">100</b>
+          <span>of <span id="batMax">100</span></span>
+          <small id="resNote" class="mono">reserve –</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="rail-section">
+      <h3 class="rail-heading">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Vitals
+      </h3>
+      <dl class="vit mono" id="vitals"></dl>
+    </section>
+
+    <section class="rail-section" id="qSec">
+      <h3 class="rail-heading">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14M15.54 8.46a5 5 0 010 7.07M8.46 8.46a5 5 0 000 7.07"/></svg>
+        Motion-rate estimate <small id="qTrue"></small>
+      </h3>
+      <div id="qBars" class="qbars"></div>
+    </section>
+  </aside>
+
+  <!-- MAIN STAGE -->
+  <main class="stage">
+    <div class="chips" id="chips">
+      <button class="chip" data-k="belief" aria-pressed="true">Belief</button>
+      <button class="chip" data-k="plan" aria-pressed="true">Path</button>
+      <button class="chip" data-k="decoys" aria-pressed="true">Decoys</button>
+      <button class="chip" data-k="clues" aria-pressed="true">Clues</button>
+      <button class="chip" data-k="cred" aria-pressed="false">90% set</button>
+      <button class="chip" data-k="pf" aria-pressed="false">Particles</button>
+      <button class="chip" data-k="eve" aria-pressed="false">Reveal EVE</button>
+      <span id="status" class="status mono"></span>
+    </div>
+    <div class="mapwrap">
+      <canvas id="map"></canvas>
+      <div id="tip" class="tip mono" hidden></div>
+    </div>
+    <div id="cellInfo" class="cellinfo mono">Hover a cell to inspect it. Click to pin.</div>
+    <div class="legend">
+      <span><i class="sw walle"></i>WALL-E</span>
+      <span><i class="sw eve"></i>EVE (truth)</span>
+      <span><i class="sw decoy"></i>Decoy</span>
+      <span><i class="sw pad"></i>Pad</span>
+      <span><i class="sw clue"></i>Clue token</span>
+      <span><i class="sw peak"></i>Peak</span>
+      <span class="ramp"><em>low</em><i></i><em>high p</em></span>
+    </div>
+  </main>
+
+  <!-- RIGHT DOCK -->
+  <aside class="dock">
+    <div class="tabs" role="tablist">
+      <button role="tab" data-t="reason" aria-selected="true">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Reasoning
+      </button>
+      <button role="tab" data-t="update" aria-selected="false">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Belief Update
+      </button>
+      <button role="tab" data-t="scores" aria-selected="false">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Scores
+      </button>
+    </div>
+
+    <div class="pane" id="pane-reason">
+      <div id="log" class="log mono"></div>
+    </div>
+
+    <div class="pane" id="pane-update" hidden>
+      <div class="eq mono">posterior ∝ prior × likelihood</div>
+      <div class="thumbs" id="thumbs">
+        <button data-v="prior"><canvas id="tPrior"></canvas><span>Prior</span></button>
+        <button data-v="lik"><canvas id="tLik"></canvas><span id="likCap">Likelihood</span></button>
+        <button data-v="post" class="on"><canvas id="tPost"></canvas><span>Posterior</span></button>
+      </div>
+      <div class="viewbar">
+        <button id="vHeat" class="chip" aria-pressed="true">Heat</button>
+        <button id="vNum" class="chip" aria-pressed="false">Numbers</button>
+        <small id="vHint" class="mono"></small>
+      </div>
+      <canvas id="big"></canvas>
+    </div>
+
+    <div class="pane" id="pane-scores" hidden>
+      <div class="cards" id="cards"></div>
+      <div class="charts">
+        <figure><canvas id="chUnc"></canvas><figcaption>Uncertainty over time <em>H/Hmax · 90% set share</em></figcaption></figure>
+        <figure><canvas id="chGain"></canvas><figcaption>Information gained per step <em>nats</em></figcaption></figure>
+        <figure><canvas id="chCal"></canvas><figcaption>Calibration <em>claimed vs observed</em></figcaption></figure>
+        <figure><canvas id="chRoc"></canvas><figcaption id="rocCap">ROC, pooled over cells</figcaption></figure>
+      </div>
+      <div id="detect" class="detect mono"></div>
+    </div>
+  </aside>
+
+  <!-- TRANSPORT FOOTER -->
+  <footer class="transport">
+    <div class="tbtns">
+      <button id="bFirst" title="First (Home)" class="tbtn">⏮</button>
+      <button id="bBack" title="Back (←)" class="tbtn">◀</button>
+      <button id="bPlay" class="btn-primary-sm play-btn" title="Run / pause (Space)">
+        <svg id="playIcon" width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+        Run
+      </button>
+      <button id="bNext" title="Step (→)" class="tbtn">▶</button>
+      <button id="bLast" title="Run to end (End)" class="tbtn">⏭</button>
+      <div class="speed-wrap">
+        <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <input id="speed" type="range" min="1" max="10" value="6" title="Speed">
+      </div>
+      <span id="pos" class="mono"></span>
+    </div>
+    <canvas id="timeline"></canvas>
+    <div class="keys mono">
+      <kbd>space</kbd> run &nbsp; <kbd>←</kbd><kbd>→</kbd> step &nbsp; <kbd>home</kbd><kbd>end</kbd> &nbsp; <kbd>r</kbd> relaunch
+    </div>
+  </footer>
+
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

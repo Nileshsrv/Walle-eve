@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it thinks · WALL-E &amp; EVE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<style>
+html,body{height:auto}body{overflow-y:auto}
+.g{max-width:1080px;margin:0 auto;padding:28px 24px 80px}
+.g header{display:flex;align-items:center;gap:16px;margin-bottom:34px}.g header a{color:var(--cyan);text-decoration:none;margin-left:auto}
+h1{font-size:30px;line-height:1.15;margin:0 0 10px;font-weight:600;letter-spacing:-.4px}
+.lede{color:var(--mute);max-width:62ch;font-size:15px;margin:0 0 36px}
+h2{font-size:15px;margin:44px 0 6px;font-weight:600}.sub{color:var(--mute);margin:0 0 16px;max-width:70ch}
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.st{padding:14px 14px 16px;border-right:1px solid var(--line);background:var(--panel);position:relative}.st:last-child{border:0}
+.st h4{margin:0 0 6px;font-size:13px;color:var(--cyan);font-weight:600}.st p{margin:0 0 10px;color:var(--mute);font-size:12px}
+.st code{display:block;font:11.5px/1.5 "JetBrains Mono",monospace;color:var(--txt);background:#0a0c10;border-radius:6px;padding:7px 8px;overflow-x:auto}
+.st .live{margin-top:10px;font:11px "JetBrains Mono",monospace;color:var(--mute)}.st .live b{color:var(--mag);font-weight:500}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.item{border-left:2px solid var(--line);padding:2px 0 2px 14px;margin-bottom:14px}.item b{color:var(--txt)}.item p{margin:2px 0 0;color:var(--mute)}
+.item.new{border-color:var(--cyan)}
+table{border-collapse:collapse;width:100%;font:12px "JetBrains Mono",monospace;margin:8px 0 22px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:var(--mute);font-weight:400}
+tr.me td{color:var(--cyan)}.tw{overflow-x:auto}
+.note{border:1px dashed #3a2b33;border-radius:8px;padding:12px 14px;color:var(--mute);max-width:78ch}
+@media(max-width:900px){.pipe{grid-template-columns:1fr}.st{border-right:0;border-bottom:1px solid var(--line)}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="g">
+  <header><div class="brand">WALL-E <i>&amp;</i> EVE</div><a href="/">Open the console</a></header>
+  <h1>How the pursuit agent reasons, and what we measured</h1>
+  <p class="lede">EVE drifts around a 14×14 grid while WALL-E hunts her on a battery. WALL-E never sees her. It sees noisy bearings and signal strengths, some of them from decoy beacons, and keeps a probability for every cell.</p>
+
+  <h2>One tick, five moves</h2>
+  <p class="sub">Numbers in magenta are read from a recorded run (<span class="mono">seed7_v2_standard</span>), not typed in.</p>
+  <div class="pipe">
+    <div class="st"><h4>Drift</h4><p>EVE moves with probability q; time advances before WALL-E acts.</p><code>q ∈ {0.05, 0.12, 0.20}<br>by threat level</code><div class="live" id="l1"></div></div>
+    <div class="st"><h4>Predict</h4><p>Smear the belief across her possible steps. Mass is conserved.</p><code>p′ = (1−q)p + q·Σ p(n)/deg(n)</code><div class="live" id="l2"></div></div>
+    <div class="st"><h4>Read</h4><p>A scan returns unlabeled detections: EVE plus every decoy, shuffled.</p><code>s = a·e^(−d/5) + noise<br>θ = bearing + noise</code><div class="live" id="l3"></div></div>
+    <div class="st"><h4>Weigh</h4><p>Marginalise over which detection is EVE, then multiply and renormalise.</p><code>L(c)=ε+Σⱼ wⱼ·N(θⱼ)·N(sⱼ)<br>post ∝ prior·L, own cell ×0.06</code><div class="live" id="l4"></div></div>
+    <div class="st"><h4>Spend</h4><p>Pick the next action under the battery rule.</p><code>reserve = path(pad) + 2·3<br>spend only if slack ≥ 0</code><div class="live" id="l5"></div></div>
+  </div>
+
+  <h2>What v2 changes</h2>
+  <p class="sub">Each change is a switch in the agent registry, so the benchmark below can credit it individually.</p>
+  <div class="two">
+    <div>
+      <div class="item new"><b>Learns EVE's speed.</b><p>Five beliefs run at different q and are re-weighted by how well each predicted the readings.</p></div>
+      <div class="item new"><b>Exact decoy handling.</b><p>Instead of a heuristic match score, it computes the probability that each detection is EVE by summing over all ways to assign detections to the known decoys.</p></div>
+      <div class="item new"><b>Scans where information is cheap.</b><p>Monte-Carlo expected information gain per battery unit, over cells it can reach and still get home from.</p></div>
+    </div>
+    <div>
+      <div class="item new"><b>Reserve from the destination.</b><p>Before committing to a leg it checks the way home from where the leg ends, not from where it stands.</p></div>
+      <div class="item new"><b>Aims at the cell that minimises expected travel.</b><p>Not the tallest peak: the cell with the smallest probability-weighted distance to all of EVE's possible positions.</p></div>
+      <div class="item new"><b>Checks itself.</b><p>A 400-particle filter shadows the grid and surprising readings are tempered. Neither uses the hidden truth. In our benchmark runs neither ever fired, so treat them as safety diagnostics, not a measured gain.</p></div>
+    </div>
+  </div>
+
+  <h2>Measured</h2>
+  <p class="sub">Paired seeds: every agent faces the same map, the same EVE path and the same sensor noise. Tuning used other seeds. Source: <span class="mono">results/LEADERBOARD.md</span>.</p>
+  <div id="board" class="tw"><span class="mono" style="color:var(--mute)">No benchmark file found. Run <b>python bench.py</b>.</span></div>
+
+  <h2>Limits</h2>
+  <div class="note">The agent knows the decoy positions; it does not have to find them. The reference-style baseline is our re-implementation from a public description, not the original code. The expected-information estimate ignores decoys when planning scans. Learning q helped only slightly (it is weakly identifiable from bearings). The biggest single gain came from the capture-oriented target, and v2 pays for its speed with a slightly worse belief (log loss 2.39 against v1's 2.29) because it scans less. Results hold for this sensor model and these map sizes.</div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+function md(t) { // minimal markdown: ## headings, pipe tables, paragraphs
+  let out = '', rows = [];
+  const flush = () => { if (!rows.length) return; const cells = r => r.split('|').slice(1, -1).map(s => s.trim());
+    out += '<table><thead><tr>' + cells(rows[0]).map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>' +
+      rows.slice(2).map(r => `<tr class="${/^\| (v2|v2 )/.test(r) && /^\| v2 \|/.test(r) ? 'me' : ''}">` + cells(r).map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody></table>'; rows = []; };
+  t.split('\n').forEach(l => { if (l.startsWith('|')) rows.push(l); else { flush(); if (l.startsWith('## ')) out += `<h2 style="margin-top:18px;font-size:13px;color:var(--mute)">${l.slice(3)}</h2>`; } });
+  flush(); return out;
+}
+(async () => {
+  const run = await (await fetch('/api/runs/seed7_v2_standard')).json(), F = run.frames, last = F[F.length - 1];
+  const scans = F.filter(f => f.action === 'scan').length, g0 = F[1] ? F[1].info_gain : 0;
+  $('l1').innerHTML = `EVE moved on <b>${F.length - 1}</b> ticks; her true q here is <b>${run.meta.true_q}</b>`;
+  $('l2').innerHTML = `entropy before any scan: <b>${F[0].entropy.toFixed(2)}</b> nats of ${Math.log(run.meta.nfree).toFixed(2)}`;
+  $('l3').innerHTML = `<b>${scans}</b> scans bought, plus the free opening reading`;
+  $('l4').innerHTML = `entropy at capture: <b>${last.entropy.toFixed(2)}</b> · 90% set: <b>${last.cred90.length}</b> cells`;
+  $('l5').innerHTML = `captured in <b>${last.step}</b> steps, <b>${last.spend.move_cost + last.spend.scan_cost}</b> battery units`;
+  const md_ = await (await fetch('/api/leaderboard')).text(); if (md_.trim()) $('board').innerHTML = md(md_);
+})();
+</script>
+</body>
+</html>
