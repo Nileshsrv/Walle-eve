@@ -1,5 +1,8 @@
 const $ = id => document.getElementById(id), $$ = s => [...document.querySelectorAll(s)];
-const CY = '0,243,255', MG = '255,0,85';
+const CY = '0,212,232', MG = '255,45,107';
+const GOLD = '240,168,50';
+const playHTML = txt => `<svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> ${txt}`;
+const pauseHTML = `<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
 const S = {meta:null, frames:[], idx:0, live:true, sum:null, timer:null, hover:null, pin:null, pulse:0, raf:null,
   tab:'reason', view:'post', numbers:false, on:{belief:1, plan:1, decoys:1, clues:1, cred:0, pf:0, eve:0}};
 const cur = () => S.frames[S.idx];
@@ -39,10 +42,10 @@ async function toEnd() {
   if (S.live && !S.sum.done) { const d = await call('/api/step', {n:400}); S.frames.push(...d.frames); S.sum = d.summary; }
   S.idx = head(); render();
 }
-function stop() { clearInterval(S.timer); S.timer = null; $('bPlay').textContent = 'Run'; }
+function stop() { clearInterval(S.timer); S.timer = null; $('bPlay').innerHTML = playHTML('Run'); }
 function play() {
   if (S.timer) return stop();
-  $('bPlay').textContent = 'Pause';
+  $('bPlay').innerHTML = pauseHTML;
   const tick = async () => { if (S.idx >= head() && (!S.live || S.sum.done)) return stop(); await stepOnce(); };
   S.timer = setInterval(tick, 1050 - $('speed').value * 100);
 }
@@ -57,7 +60,7 @@ function drawMap() {
   for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * cs, 0); g.lineTo(i * cs, W); g.moveTo(0, i * cs); g.lineTo(W, i * cs); g.stroke(); }
   g.fillStyle = '#232a38'; S.meta.obstacles.forEach(([r, c]) => g.fillRect(c * cs + 1, r * cs + 1, cs - 2, cs - 2));
   if (S.on.belief) { const mx = Math.max(...f.belief.flat());
-    f.belief.forEach((row, r) => row.forEach((p, c) => { if (p > 0) { g.fillStyle = `rgba(${CY},${Math.min(.92, Math.sqrt(p / mx) * .85)})`; g.fillRect(c * cs + 1, r * cs + 1, cs - 2, cs - 2); } })); }
+    f.belief.forEach((row, r) => row.forEach((p, c) => { if (p > 0) { g.fillStyle = `rgba(${GOLD},${Math.min(.9, Math.sqrt(p / mx) * .82)})`; g.fillRect(c * cs + 1, r * cs + 1, cs - 2, cs - 2); } })); }
   if (S.on.pf && f.pf) { const mx = Math.max(...f.pf.flat(), 1);
     g.fillStyle = '#fff'; f.pf.forEach((row, r) => row.forEach((k, c) => { if (k) { g.globalAlpha = .35 + .6 * k / mx; g.beginPath(); g.arc(cx(c), cx(r), 1.5 + 2.5 * Math.sqrt(k / mx), 0, 7); g.fill(); } })); g.globalAlpha = 1; }
   if (S.on.cred) { g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1; g.setLineDash([2, 2]); f.cred90.forEach(([r, c]) => g.strokeRect(c * cs + 2.5, r * cs + 2.5, cs - 5, cs - 5)); g.setLineDash([]); }
@@ -134,10 +137,10 @@ function drawLog() {
 function heat(cv, M, flat, numbers, scale) {
   const [g, W] = fit(cv, cv.clientWidth), n = M.length, cs = W / n, mx = Math.max(...M.flat()) || 1;
   M.forEach((row, r) => row.forEach((v, c) => { const o = obsAt(r, c);
-    g.fillStyle = o ? '#1a1f2b' : `rgba(${CY},${flat ? .1 : Math.sqrt(v / mx) * .95})`; g.fillRect(c * cs, r * cs, cs, cs);
-    if (numbers && !o) { g.fillStyle = v / mx > .5 ? '#001417' : '#aab3c4'; g.font = `${Math.max(7, cs * .36)}px "JetBrains Mono",monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = o ? '#1a1f2b' : `rgba(${GOLD},${flat ? .08 : Math.sqrt(v / mx) * .9})`; g.fillRect(c * cs, r * cs, cs, cs);
+    if (numbers && !o) { g.fillStyle = v / mx > .5 ? '#0a0700' : '#aab3c4'; g.font = `${Math.max(7, cs * .36)}px "JetBrains Mono",monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText(Math.round(v * scale) || '·', c * cs + cs / 2, r * cs + cs / 2); } }));
-  const [wr, wc] = cur().walle; g.strokeStyle = '#fff'; g.lineWidth = 1; g.strokeRect(wc * cs, wr * cs, cs, cs);
+  const [wr, wc] = cur().walle; g.strokeStyle = 'rgba(0,212,232,.8)'; g.lineWidth = 1.5; g.strokeRect(wc * cs + .5, wr * cs + .5, cs - 1, cs - 1);
 }
 function drawUpdate() {
   const f = cur(), noScan = f.mode !== 'scan' && f.step > 0 && !f.lik.flat().some(v => v < .999);
@@ -162,7 +165,7 @@ function drawScores() {
     + card('Info gained', (m.total_info_gain ?? 0).toFixed(1), 'nats over the run') + card('Pooled AUC', (m.roc_auc_pooled ?? 0).toFixed(3), 'all cells, all steps');
   const N = Math.max(fm.length - 1, 1), Hm = Math.log(S.meta.nfree);
   axesChart($('chUnc'), (g, X, Y, W, H, pd) => {
-    [[fm.map(x => x.entropy / Hm), `rgb(${CY})`], [fm.map(x => x.cred90.length / S.meta.nfree), '#ffb454']].forEach(([s, col]) => { g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); s.forEach((v, i) => i ? g.lineTo(X(i, 0, N), Y(v, 0, 1)) : g.moveTo(X(i, 0, N), Y(v, 0, 1))); g.stroke(); });
+    [[fm.map(x => x.entropy / Hm), `rgb(${GOLD})`], [fm.map(x => x.cred90.length / S.meta.nfree), `rgba(${CY},.7)`]].forEach(([s, col]) => { g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); s.forEach((v, i) => i ? g.lineTo(X(i, 0, N), Y(v, 0, 1)) : g.moveTo(X(i, 0, N), Y(v, 0, 1))); g.stroke(); });
     g.fillText('1', 14, pd.t + 6); g.fillText('0', 14, H - pd.b); g.fillText('step ' + N, W - 52, H - 4); });
   const gm = Math.max(0.5, ...fm.map(x => Math.abs(x.info_gain)));
   axesChart($('chGain'), (g, X, Y, W, H, pd) => { const z = Y(0, -gm, gm), bw = Math.max(2, (W - pd.l - pd.r) / (N + 1) - 1);
@@ -170,7 +173,7 @@ function drawScores() {
     g.fillText('+' + gm.toFixed(1), 2, pd.t + 6); g.fillText('-' + gm.toFixed(1), 2, H - pd.b); });
   const sq = Math.sqrt;
   axesChart($('chCal'), (g, X, Y, W, H, pd) => { g.strokeStyle = '#2a3140'; g.beginPath(); g.moveTo(X(0, 0, 1), Y(0, 0, 1)); g.lineTo(X(1, 0, 1), Y(1, 0, 1)); g.stroke();
-    (m.calibration || []).filter(b => b.n).forEach(b => { g.fillStyle = `rgba(${CY},.85)`; g.beginPath(); g.arc(X(sq(b.pred), 0, 1), Y(sq(b.obs), 0, 1), 2 + Math.log10(b.n + 1), 0, 7); g.fill(); });
+    (m.calibration || []).filter(b => b.n).forEach(b => { g.fillStyle = `rgba(${GOLD},.85)`; g.beginPath(); g.arc(X(sq(b.pred), 0, 1), Y(sq(b.obs), 0, 1), 2 + Math.log10(b.n + 1), 0, 7); g.fill(); });
     g.fillText('observed', 2, pd.t + 6); g.fillText('claimed (√ scale)', W - 90, H - 4); });
   axesChart($('chRoc'), (g, X, Y, W, H, pd) => { g.strokeStyle = '#2a3140'; g.beginPath(); g.moveTo(X(0, 0, 1), Y(0, 0, 1)); g.lineTo(X(1, 0, 1), Y(1, 0, 1)); g.stroke();
     g.strokeStyle = `rgb(${CY})`; g.lineWidth = 1.8; g.beginPath(); (m.roc || []).forEach(([x, y], i) => i ? g.lineTo(X(x, 0, 1), Y(y, 0, 1)) : g.moveTo(X(x, 0, 1), Y(y, 0, 1))); g.stroke();
@@ -185,14 +188,14 @@ function drawScores() {
 function drawTimeline() {
   const [g, W, H] = fit($('timeline')), F = S.frames, N = Math.max(F.length, 24), x = i => 6 + i / (N - 1) * (W - 12), Hm = Math.log(S.meta.nfree);
   F.forEach((f, i) => { const w = Math.max(3, (W - 12) / N - 1);
-    if (f.mode === 'return' || f.mode === 'recharge') { g.fillStyle = 'rgba(255,180,84,.16)'; g.fillRect(x(i) - w / 2, 0, w, H); }
-    if (f.info_gain > 0) { g.fillStyle = `rgba(${CY},.22)`; g.fillRect(x(i) - w / 2, H - 4 - Math.min(f.info_gain / 1.5, 1) * H * .45, w, Math.min(f.info_gain / 1.5, 1) * H * .45); } });
+    if (f.mode === 'return' || f.mode === 'recharge') { g.fillStyle = 'rgba(240,168,50,.1)'; g.fillRect(x(i) - w / 2, 0, w, H); }
+    if (f.info_gain > 0) { g.fillStyle = `rgba(${CY},.25)`; g.fillRect(x(i) - w / 2, H - 4 - Math.min(f.info_gain / 1.5, 1) * H * .45, w, Math.min(f.info_gain / 1.5, 1) * H * .45); } });
   g.beginPath(); g.moveTo(x(0), H); F.forEach((f, i) => g.lineTo(x(i), H - 4 - f.entropy / Hm * (H - 16))); g.lineTo(x(F.length - 1), H); g.closePath();
-  g.fillStyle = `rgba(${CY},.12)`; g.fill(); g.strokeStyle = `rgb(${CY})`; g.lineWidth = 1.5; g.beginPath(); F.forEach((f, i) => i ? g.lineTo(x(i), H - 4 - f.entropy / Hm * (H - 16)) : g.moveTo(x(i), H - 4 - f.entropy / Hm * (H - 16))); g.stroke();
-  F.forEach((f, i) => { if (f.mode === 'scan' || f.mode === 'clue') { g.fillStyle = f.mode === 'clue' ? '#5ce1a0' : `rgb(${CY})`; g.beginPath(); g.arc(x(i), 7, 2.4, 0, 7); g.fill(); } });
-  const last = F[F.length - 1]; if (last.captured) { g.fillStyle = `rgb(${MG})`; g.beginPath(); g.arc(x(F.length - 1), 7, 4, 0, 7); g.fill(); }
-  g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x(S.idx), 0); g.lineTo(x(S.idx), H); g.stroke();
-  g.fillStyle = '#7a8395'; g.font = '9px "JetBrains Mono",monospace'; g.fillText('entropy · ● scan  ▮ info gain  ▒ recharge', 8, H - 6);
+  g.fillStyle = `rgba(${GOLD},.1)`; g.fill(); g.strokeStyle = `rgb(${GOLD})`; g.lineWidth = 1.5; g.beginPath(); F.forEach((f, i) => i ? g.lineTo(x(i), H - 4 - f.entropy / Hm * (H - 16)) : g.moveTo(x(i), H - 4 - f.entropy / Hm * (H - 16))); g.stroke();
+  F.forEach((f, i) => { if (f.mode === 'scan' || f.mode === 'clue') { g.fillStyle = f.mode === 'clue' ? '#3de89c' : `rgb(${CY})`; g.beginPath(); g.arc(x(i), 7, 2.5, 0, 7); g.fill(); } });
+  const last = F[F.length - 1]; if (last.captured) { g.fillStyle = `rgb(${GOLD})`; g.shadowColor = `rgb(${GOLD})`; g.shadowBlur = 8; g.beginPath(); g.arc(x(F.length - 1), 7, 4, 0, 7); g.fill(); g.shadowBlur = 0; }
+  g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x(S.idx), 0); g.lineTo(x(S.idx), H); g.stroke();
+  g.fillStyle = '#5e6b85'; g.font = '9px "JetBrains Mono",monospace'; g.fillText('entropy · ● scan  ▮ info gain  ▒ recharge', 8, H - 6);
 }
 function seek(ev) { const b = $('timeline').getBoundingClientRect(), N = Math.max(S.frames.length, 24); S.idx = Math.max(0, Math.min(head(), Math.round((ev.clientX - b.left - 6) / (b.width - 12) * (N - 1)))); render(); }
 
